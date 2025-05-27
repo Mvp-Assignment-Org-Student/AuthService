@@ -18,7 +18,7 @@ public class AuthService(IMemoryCache cache) : IAuthService
         // Hjälp av chatgpt 
         var request = new { Email = email };
 
-        var response = await http.PostAsJsonAsync($"https://localhost:7029/api/Account/exists/email", request);
+        var response = await http.PostAsJsonAsync($"https://accountservice-brcpcveraagah0cd.swedencentral-01.azurewebsites.net/api/Account/exists/email", request);
         
         if (!response.IsSuccessStatusCode)
         {
@@ -42,7 +42,7 @@ public class AuthService(IMemoryCache cache) : IAuthService
         using var http = new HttpClient();
 
 
-        var createUserResponse = await http.PostAsJsonAsync("https://localhost:7029/api/Account/create", dto);
+        var createUserResponse = await http.PostAsJsonAsync("https://accountservice-brcpcveraagah0cd.swedencentral-01.azurewebsites.net/api/Account/create", dto);
         if (!createUserResponse.IsSuccessStatusCode)
         {
             return new AuthServiceResult { Success = false, Error = "Failed to create user" };
@@ -52,7 +52,7 @@ public class AuthService(IMemoryCache cache) : IAuthService
         var request = new { Email = dto.Email };
 
 
-        var verifyCodeResponse = await http.PostAsJsonAsync("https://localhost:7238/api/Verification/send", request);
+        var verifyCodeResponse = await http.PostAsJsonAsync("https://verificationservice-ercbhacafnhac8gj.swedencentral-01.azurewebsites.net/api/Verification/send", request);
        
         if (!verifyCodeResponse.IsSuccessStatusCode)
         {
@@ -74,14 +74,14 @@ public class AuthService(IMemoryCache cache) : IAuthService
             Code = request.Code
         };  
 
-        var verifyCodeResponse = await http.PostAsJsonAsync("https://localhost:7238/api/Verification/verify", verifyRequest);
+        var verifyCodeResponse = await http.PostAsJsonAsync("https://verificationservice-ercbhacafnhac8gj.swedencentral-01.azurewebsites.net/api/Verification/verify", verifyRequest);
 
         if (!verifyCodeResponse.IsSuccessStatusCode)
         {
             return new AuthServiceResult { Success = false, Error = "Code is invalid" };
         }
 
-        var confirmEmailResponse = await http.PostAsJsonAsync("https://localhost:7029/api/Account/confirm-email", new ConfirmEmailRequest { Email = verifyRequest.Email });
+        var confirmEmailResponse = await http.PostAsJsonAsync("https://accountservice-brcpcveraagah0cd.swedencentral-01.azurewebsites.net/api/Account/confirm-email", new ConfirmEmailRequest { Email = verifyRequest.Email });
 
         if (!confirmEmailResponse.IsSuccessStatusCode)
         {
