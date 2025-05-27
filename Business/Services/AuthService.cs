@@ -40,7 +40,17 @@ public class AuthService(IMemoryCache cache) : IAuthService
 
         // Postar email till send verify kod
         using var http = new HttpClient();
+
+
+        var createUserResponse = await http.PostAsJsonAsync("https://localhost:7029/api/Account/create", dto);
+        if (!createUserResponse.IsSuccessStatusCode)
+        {
+            return new AuthServiceResult { Success = false, Error = "Failed to create user" };
+
+        }
+
         var request = new { Email = dto.Email };
+
 
         var verifyCodeResponse = await http.PostAsJsonAsync("https://localhost:7238/api/Verification/send", request);
        
@@ -49,59 +59,39 @@ public class AuthService(IMemoryCache cache) : IAuthService
             return new AuthServiceResult { Success = false };
         }
 
-        //Hjälp av chatgpt men även av verificationservice videon.
-        var key = dto.Email.ToLowerInvariant().Trim();
-        _cache.Set(key, dto, TimeSpan.FromMinutes(10));
-        
-
-
-
         return new AuthServiceResult { Success = true };
         // Sedan till frontend delen
 
     }
-
-
-    // Som skickar en vidare hit för att kontrollera coden
-    public async Task<AuthServiceResult> SendToAccountService(VerifiedDtoRequest request)
+    // Ska få in Email från frontend på något sätt
+    public async Task<AuthServiceResult> VerifyCodeAndConfirmEmail(VerifiedDtoRequest request)
     {
-        //Hämta Email på något sätt. Vill inte ha email i requesten?
-        var key = Email.ToLowerInvariant().Trim();
-
-        if (_cache.TryGetValue<SignUpDto>(key, out var storedDto))
-        {
-            Console.WriteLine($"SUCCESS: Found dto for {storedDto.Email}");
-        }
-        else
-        {
-            Console.WriteLine("FAIL: No dto found for " + key);
-        }
-
+        using var http = new HttpClient();
 
         var verifyRequest = new VerifyVerificationCodeRequest
         {
-            Email = storedDto.Email,
-            VerifyCode = request.VerifyCode
-        };
+            Email = request.Email,
+            Code = request.Code
+        };  
 
-        using var http = new HttpClient();
-        var verifyCodeResponse = await http.PostAsJsonAsync("https://verificationservice-ercbhacafnhac8gj.swedencentral-01.azurewebsites.net/api/Verification/verify", verifyRequest);
-        
+        var verifyCodeResponse = await http.PostAsJsonAsync("https://localhost:7238/api/Verification/verify", verifyRequest);
 
         if (!verifyCodeResponse.IsSuccessStatusCode)
         {
-            Console.WriteLine("Something went wrong");
-            return new AuthServiceResult { Success = false };
+            return new AuthServiceResult { Success = false, Error = "Code is invalid" };
         }
-        var createAccountResponse = await http.PostAsJsonAsync("https://accountservice-brcpcveraagah0cd.swedencentral-01.azurewebsites.net/api/Account/create", storedDto);
-        
-        if (!createAccountResponse.IsSuccessStatusCode)
+
+        var confirmEmailResponse = await http.PostAsJsonAsync("https://localhost:7029/api/Account/confirm-email", new ConfirmEmailRequest { Email = verifyRequest.Email });
+
+        if (!confirmEmailResponse.IsSuccessStatusCode)
         {
-            Console.WriteLine("Something went wrong");
-            return new AuthServiceResult { Success = false };
+            return new AuthServiceResult { Success = false, Error = "Failed to confirm email" };
+
         }
 
         return new AuthServiceResult { Success = true };
-
     }
+
+
+    
 }

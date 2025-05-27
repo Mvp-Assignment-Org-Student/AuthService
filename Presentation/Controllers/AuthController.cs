@@ -26,10 +26,10 @@ public class AuthController(IAuthService authService) : ControllerBase
         return result.Success ? Ok(result) : BadRequest();
     }
 
-    [HttpPost("create")]
-    public async Task<IActionResult> Forward(VerifiedDtoRequest request)
+    [HttpPost("confirm")]
+    public async Task<IActionResult> Confirm(VerifiedDtoRequest request)
     {
-        var result = await _authService.SendToAccountService(request);
+        var result = await _authService.VerifyCodeAndConfirmEmail(request);
 
         return result.Success ? Ok(result) : BadRequest();
     }

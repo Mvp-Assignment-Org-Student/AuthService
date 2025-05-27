@@ -4,6 +4,6 @@ namespace Business.Models;
 
 public class VerifiedDtoRequest
 {
-
-    public string VerifyCode { get; set; } = null!;
+    public string Email { get; set; } = null!;
+    public string Code { get; set; } = null!;
 }

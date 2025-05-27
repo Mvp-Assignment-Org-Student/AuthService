@@ -3,5 +3,5 @@
 public class VerifyVerificationCodeRequest
 {
     public string Email { get; set; } = null!;
-    public string VerifyCode { get; set; } = null!;
+    public string Code { get; set; } = null!;
 }
