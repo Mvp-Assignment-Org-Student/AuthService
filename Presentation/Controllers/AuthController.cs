@@ -1,6 +1,6 @@
 ﻿using Business.Dtos;
+using Business.Interfaces;
 using Business.Models;
-using Business.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,6 +24,29 @@ public class AuthController(IAuthService authService) : ControllerBase
         var result = await _authService.SignUp(dto);
 
         return result.Success ? Ok(result) : BadRequest();
+    }
+
+    [HttpPost("signin")]
+    public async Task<IActionResult> SignIn(SignInDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+
+        }
+
+        var result = await _authService.SignIn(dto);
+
+        return result.Success ? Ok(result) : BadRequest();
+
+    }
+
+    [HttpPost("signout")]
+    public async Task<IActionResult> SignOut()
+    {
+        var result = await _authService.SignOut();
+
+        return result.Success ? Ok(result) : BadRequest(result);
     }
 
     [HttpPost("confirm")]

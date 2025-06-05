@@ -1,3 +1,4 @@
+using Business.Interfaces;
 using Business.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,7 +24,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.RoutePrefix = string.Empty;
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth Servic Api");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth Service Api");
 });
 app.MapControllers();
 

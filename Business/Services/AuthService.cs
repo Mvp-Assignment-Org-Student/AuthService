@@ -1,7 +1,9 @@
 ﻿using Business.Dtos;
+using Business.Interfaces;
 using Business.Models;
-using System.Net.Http.Json;
 using Microsoft.Extensions.Caching.Memory;
+using System.Net.Http.Json;
+using static System.Net.WebRequestMethods;
 
 namespace Business.Services;
 
@@ -10,6 +12,9 @@ public class AuthService(IMemoryCache cache) : IAuthService
 
     private readonly IMemoryCache _cache = cache;
 
+    string AccountServiceUrl = "https://accountservice-brcpcveraagah0cd.swedencentral-01.azurewebsites.net/";
+    string VerificationServiceUrl = "https://verificationservice-ercbhacafnhac8gj.swedencentral-01.azurewebsites.net/";
+    
     public async Task<AuthServiceResult> ExistsAsync(string email)
     {
 
@@ -18,7 +23,7 @@ public class AuthService(IMemoryCache cache) : IAuthService
         // Hjälp av chatgpt 
         var request = new { Email = email };
 
-        var response = await http.PostAsJsonAsync($"https://accountservice-brcpcveraagah0cd.swedencentral-01.azurewebsites.net/api/Account/exists/email", request);
+        var response = await http.PostAsJsonAsync($"{AccountServiceUrl}/api/Account/exists/email", request);
         
         if (!response.IsSuccessStatusCode)
         {
@@ -33,7 +38,7 @@ public class AuthService(IMemoryCache cache) : IAuthService
     public async Task<AuthServiceResult> SignUp(SignUpDto dto)
     {
         var exist = await ExistsAsync(dto.Email);
-        if (exist.Success)
+        if (!exist.Success)
         {
             return new AuthServiceResult { Success = false };
         }
@@ -42,7 +47,7 @@ public class AuthService(IMemoryCache cache) : IAuthService
         using var http = new HttpClient();
 
 
-        var createUserResponse = await http.PostAsJsonAsync("https://accountservice-brcpcveraagah0cd.swedencentral-01.azurewebsites.net/api/Account/create", dto);
+        var createUserResponse = await http.PostAsJsonAsync($"{AccountServiceUrl}/api/Account/create", dto);
         if (!createUserResponse.IsSuccessStatusCode)
         {
             return new AuthServiceResult { Success = false, Error = "Failed to create user" };
@@ -52,7 +57,7 @@ public class AuthService(IMemoryCache cache) : IAuthService
         var request = new { Email = dto.Email };
 
 
-        var verifyCodeResponse = await http.PostAsJsonAsync("https://verificationservice-ercbhacafnhac8gj.swedencentral-01.azurewebsites.net/api/Verification/send", request);
+        var verifyCodeResponse = await http.PostAsJsonAsync($"{VerificationServiceUrl}/api/Verification/send", request);
        
         if (!verifyCodeResponse.IsSuccessStatusCode)
         {
@@ -63,7 +68,42 @@ public class AuthService(IMemoryCache cache) : IAuthService
         // Sedan till frontend delen
 
     }
-    // Ska få in Email från frontend på något sätt
+
+    public async Task<AuthServiceResult> SignIn(SignInDto dto)
+    {
+        using var http = new HttpClient();
+
+        var response = await http.PostAsJsonAsync($"{AccountServiceUrl}/api/Account/login", dto);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return new AuthServiceResult { Success = false, Error = "Login failed" };
+        }
+
+        var content = await response.Content.ReadFromJsonAsync<AccountServiceResultToken>();
+
+        return new AuthServiceResult
+        {
+            Success = true,
+            Token = content?.Token
+        };
+    }
+
+    public async Task<AuthServiceResult> SignOut()
+    {
+        using var http = new HttpClient();
+
+        var response = await http.PostAsync($"{AccountServiceUrl}/api/Account/logout", null);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return new AuthServiceResult { Success = false, Error = "Logout failed" };
+        }
+
+        return new AuthServiceResult { Success = true };
+    }
+
+
     public async Task<AuthServiceResult> VerifyCodeAndConfirmEmail(VerifiedDtoRequest request)
     {
         using var http = new HttpClient();
@@ -74,14 +114,14 @@ public class AuthService(IMemoryCache cache) : IAuthService
             Code = request.Code
         };  
 
-        var verifyCodeResponse = await http.PostAsJsonAsync("https://verificationservice-ercbhacafnhac8gj.swedencentral-01.azurewebsites.net/api/Verification/verify", verifyRequest);
+        var verifyCodeResponse = await http.PostAsJsonAsync($"{VerificationServiceUrl}/api/Verification/verify", verifyRequest);
 
         if (!verifyCodeResponse.IsSuccessStatusCode)
         {
             return new AuthServiceResult { Success = false, Error = "Code is invalid" };
         }
 
-        var confirmEmailResponse = await http.PostAsJsonAsync("https://accountservice-brcpcveraagah0cd.swedencentral-01.azurewebsites.net/api/Account/confirm-email", new ConfirmEmailRequest { Email = verifyRequest.Email });
+        var confirmEmailResponse = await http.PostAsJsonAsync($"{AccountServiceUrl}/api/Account/confirm-email", new ConfirmEmailRequest { Email = verifyRequest.Email });
 
         if (!confirmEmailResponse.IsSuccessStatusCode)
         {
@@ -92,6 +132,6 @@ public class AuthService(IMemoryCache cache) : IAuthService
         return new AuthServiceResult { Success = true };
     }
 
-
     
+
 }
