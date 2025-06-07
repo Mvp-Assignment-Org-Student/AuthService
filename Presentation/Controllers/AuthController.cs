@@ -42,7 +42,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     [HttpPost("signout")]
-    public async Task<IActionResult> SignOut()
+    public async Task<IActionResult> SignOutUser()
     {
         var result = await _authService.SignOut();
 
